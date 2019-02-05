@@ -36,10 +36,10 @@ func loadConfig(path string) config {
 
 func main() {
 	c := loadConfig("./config.json")
-	serverPort := ":" + c.ServerPort
+	serverPort := c.ServerPort
 	nodeURL := c.NodeURL
 	privateKey := c.PrivateKey
-	fmt.Printf("Server on: %s\n\tBuild Timestamp: %s\n\tGitHash: %s\n", nodeURL, buildstamp, githash)
+	fmt.Printf("Server on port: %s\n\tBuild Timestamp: %s\n\tGitHash: %s\n", serverPort, buildstamp, githash)
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
@@ -48,7 +48,7 @@ func main() {
 		log.Panic(err)
 	}
 
-	_, err = server.New(serverPort, client)
+	_, err = server.New(":"+serverPort, client)
 	if err != nil {
 		log.Panic(err)
 	}

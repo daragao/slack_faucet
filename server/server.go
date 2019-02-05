@@ -61,7 +61,7 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		sendResponse(w, "ephemeral", "testing the command: "+responseURL)
+		sendResponse(w, "ephemeral", "Creating Tx to fund account "+text)
 		log.Println("Faucet fund:", text)
 
 		go func(address string) {
@@ -72,7 +72,7 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 				postResponse(responseURL, ResponseJSON{"ephemeral", "failed to fund: " + address, nil})
 				return
 			}
-			postResponse(responseURL, ResponseJSON{"ephemeral", "Submited Tx(" + txHash + ") to fund " + address, nil})
+			postResponse(responseURL, ResponseJSON{"ephemeral", "Submited Tx(" + txHash + ") to fund account" + address, nil})
 		}(text)
 	} else {
 		sendResponse(w, "ephemeral", "\""+command+"\" command not recognized!")

@@ -1,61 +1,55 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
+	"io/ioutil"
+	"log"
+	"os"
+
+	"github.com/daragao/slack_faucet/node"
+	"github.com/daragao/slack_faucet/server"
 )
 
-// ResponseJSON struct
-type ResponseJSON struct {
-	ResponseType string         `json:"response_type,omitempty"`
-	Text         string         `json:"text,omitempty"`
-	Attachments  []ResponseJSON `json:"attachments,omitempty"`
+var buildstamp, githash string
+
+// Config config struct
+type config struct {
+	PrivateKey string `json:"private-key"`
+	NodeURL    string `json:"node-url"`
+	ServerPort string `json:"server-port"`
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	//Read the Request Parameter "command"
-	command := r.FormValue("command")
-	responseURL := r.FormValue("response_url")
-	fmt.Println("Hello handler!")
-	//Ideally do other checks for tokens/username/etc
-	if command == "/faucet" {
-		respJSON := ResponseJSON{"ephemeral", "testing the command: " + responseURL, nil}
-		payload, err := json.Marshal(respJSON)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(payload))
-
-		go func() {
-			time.Sleep(2 * time.Second)
-			postResponse(responseURL, ResponseJSON{"ephemeral", "delayed response", nil})
-		}()
-	} else {
-		fmt.Fprint(w, "I do not understand your command.")
-	}
-}
-
-func postResponse(url string, respJSON ResponseJSON) {
-	payload, err := json.Marshal(respJSON)
+func loadConfig(path string) config {
+	jsonFile, err := os.Open(path)
 	if err != nil {
-		fmt.Println("ERROR: failed to unmarshal response")
+		log.Panic(err)
 	}
+	defer jsonFile.Close()
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
-	if err != nil {
-		fmt.Println("ERROR: failed to post response")
-	}
-	fmt.Println(resp)
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	result := config{}
+	json.Unmarshal([]byte(byteValue), &result)
+	return result
 }
 
 func main() {
-	fmt.Println("vim-go")
-	http.HandleFunc("/", handler)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		panic(err)
+	c := loadConfig("./config.json")
+	serverPort := ":" + c.ServerPort
+	nodeURL := c.NodeURL
+	privateKey := c.PrivateKey
+	fmt.Printf("Server on: %s\n\tBuild Timestamp: %s\n\tGitHash: %s\n", nodeURL, buildstamp, githash)
+
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
+	client, err := node.New(nodeURL, privateKey[2:])
+	if err != nil {
+		log.Panic(err)
+	}
+
+	_, err = server.New(serverPort, client)
+	if err != nil {
+		log.Panic(err)
 	}
 }

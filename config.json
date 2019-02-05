@@ -1,0 +1,5 @@
+{
+  "private-key": "0xb82c5dce5f18fe371f124463acc3f4007b6d04d48b2cbc95358b6b03f25fb154",
+  "node-url": "http://localhost:8545",
+  "server-port": "8080"
+}
